@@ -4,7 +4,7 @@ import numpy as np
 import numpy.ma as ma
 import xarray as xr
 
-
+from calipso.data.coordinate import Coordinate
 # Functions
 def valid_range_finder(datasetvariable):
     '''
@@ -88,7 +88,9 @@ def create_extinction_tensor(filename):
     extinction_data = select_data(filename)
     latitude = select_data(filename, 'Latitude')[:, 0]
     longitude = select_data(filename, 'Longitude')[:, 0]
-
+    
+    coordinates = [Coordinate(latitude=lat, longitude=lon) for lat, lon in zip(latitude, longitude)]
+    
     altitudes = make_altitudes() # Makes the altitudes I think the documentation is telling me it makes
     
     data_tensor = xr.DataArray(extinction_data, dims=['lat', 'alt'], coords={'lat':latitude, 'alt':altitudes})
