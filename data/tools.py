@@ -5,6 +5,8 @@ import numpy.ma as ma
 import xarray as xr
 
 from calipso.data.coordinate import Coordinate
+
+
 # Functions
 def valid_range_finder(datasetvariable):
     '''
@@ -42,6 +44,7 @@ def select_data(filename, var_name='Extinction_Coefficient_532'):
 def make_altitudes():
     '''
     Convenience function for making the array of altitudes for Calypso data.
+    Makes them in Km.
     
     CALIOP is a three channel lidar, with detectors that collect 532 nm parallel,
     532 nm perpendicular, and 1064 nm light that is backscattered from molecules and particulates
@@ -88,15 +91,36 @@ def create_extinction_tensor(filename):
     extinction_data = select_data(filename)
     latitude = select_data(filename, 'Latitude')[:, 0]
     longitude = select_data(filename, 'Longitude')[:, 0]
-    
-    coordinates = [Coordinate(latitude=lat, longitude=lon) for lat, lon in zip(latitude, longitude)]
-    
     altitudes = make_altitudes() # Makes the altitudes I think the documentation is telling me it makes
     
-    data_tensor = xr.DataArray(extinction_data, dims=['lat', 'alt'], coords={'lat':latitude, 'alt':altitudes})
-    data_tensor.alt.attrs['units'] = 'Km'
+    data_tensor = xr.DataArray(extinction_data, dims=['lat', 'alt'], coords=[latitude, altitudes])
+    
+    # Packs the lat and lon data in attrs so it can be retrieved later for complete plotting of coordinates
+    data_tensor.lat.attrs['lat'] = latitude
+    data_tensor.lat.attrs['lon'] = longitude
     return data_tensor
 
+
+def filter_tensor(data_tensor, latitudes=(-90, 90), longitudes=False, altitudes=(0, 12), sortby='lat'):
+    '''
+    Takes in an xarray tensor along with the sections of latitude, and altitude
+    that should be kept. Altitudes are in Km.
+    
+    Returns the transpose of the original tensor since the next step is probably plotting
+    figured it would save a little bit of typing.
+    
+    This started out way more complicated than it needed to be
+    and really isn't necessary as the line to do the same thing looks like:
+    qm = extinction_data.sortby('lat').loc[-10:55, extinction_data.alt <= 12].transpose().plot(ax=ax, cmap=plt.cm.plasma, add_colorbar=False)
+    which isn't horrible. I decided to keep it though so the actions being done are explicit
+    rather than implicit.
+    '''
+
+    a, b = min(altitudes), max(altitudes) # The altitudes can be given in any order
+    sorted_alts = data_tensor.sortby(sortby).alt
+    altitudes_mask = [ a <= alt and alt <= b for alt in sorted_alts] # Boolean mask of where the altitude should be kept
+    
+    return data_tensor.sortby(sortby).loc[slice(*latitudes), altitudes_mask].transpose()
 
 
 

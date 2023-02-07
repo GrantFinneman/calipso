@@ -1,6 +1,8 @@
 # File containing the definition of coordinate class so put both lat and longitude in the axis coordinate
 # for the tensor
 
+import numpy as np
+
 class Coordinate:
     '''
     Class that holds both the latitude and longitude data
@@ -29,11 +31,23 @@ class Coordinate:
     def __eq__(self, other):
         if isinstance(other, Coordinate):
             return self.lat == other.lat and self.lon == other.lon
+        if isinstance(other, int):
+            return self.lat == other
         
     def __lt__(self, other):
         if isinstance(other, Coordinate):
-            return self.cantor < other.cantor
+            return self.lat < other.lat
+        if isinstance(other, int):
+            return self.lat < other
             
     def __le__(self, other):
         if isinstance(other, Coordinate):
             return self < other or self == other
+        if isinstance(other, int):
+            return self.lat <= other
+        
+    def __float__(self):
+        return float(self.lat)
+    
+    def __array__(self):
+        return np.array([self.lat])
